@@ -64,7 +64,7 @@ function App() {
       });
     }
 
-    const authenticatedActor = createActor(process.env.CANISTER_ID_ICPPASS_BACKEND, {
+    const authenticatedActor = createActor(process.env.CANISTER_ID_ICPPASS_BACKEND || "4rrk5-fyaaa-aaaad-aawzq-cai", {
       agent,
     });
     

@@ -1,12 +1,12 @@
 // Import required libraries
 import { AuthClient } from '@dfinity/auth-client';
 import { HttpAgent } from '@dfinity/agent';
-import { createActor } from './declarations/icppass_backend';
+import { createActor } from './declarations/icppass_backend/index.js';
 
 // Constants
 const LOCAL_IDENTITY_KEY = 'icppass_identity';
-const CANISTER_ID = process.env.CANISTER_ID_ICPPASS_BACKEND || 'rrkah-fqaaa-aaaaa-aaaaq-cai'; // Default local canister ID
-const HOST = process.env.DFX_NETWORK === 'ic' ? 'https://ic0.app' : 'http://localhost:4943';
+const CANISTER_ID = '4rrk5-fyaaa-aaaad-aawzq-cai'; // Production canister ID from canister_ids.json
+const HOST = 'https://ic0.app'; // Always use production IC host
 
 // State management
 let authClient = null;
@@ -17,41 +17,59 @@ let currentUrl = '';
 let currentDomain = '';
 
 // DOM elements
-const views = {
-  login: document.getElementById('login-view'),
-  passwords: document.getElementById('passwords-view'),
-  passwordForm: document.getElementById('password-form-view')
-};
+let views = {};
 
 // Initialize the extension popup
 async function init() {
   try {
+    // Initialize DOM elements
+    views = {
+      login: document.getElementById('login-view'),
+      passwords: document.getElementById('passwords-view'),
+      passwordForm: document.getElementById('password-form-view')
+    };
+
     // Get current tab URL
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tabs && tabs[0]) {
+    if (tabs && tabs[0] && tabs[0].url) {
       currentUrl = tabs[0].url;
-      const url = new URL(currentUrl);
-      currentDomain = url.hostname;
-      
-      // Update UI with current site info
-      document.getElementById('site-domain').textContent = currentDomain;
-      document.getElementById('site-favicon').src = `https://www.google.com/s2/favicons?domain=${currentDomain}`;
-      
-      // Set website field in the form
-      document.getElementById('website').value = currentDomain;
+      try {
+        const url = new URL(currentUrl);
+        currentDomain = url.hostname;
+        
+        // Update UI with current site info
+        const siteDomainEl = document.getElementById('site-domain');
+        if (siteDomainEl) siteDomainEl.textContent = currentDomain;
+        
+        const siteFaviconEl = document.getElementById('site-favicon');
+        if (siteFaviconEl) siteFaviconEl.src = `https://www.google.com/s2/favicons?domain=${currentDomain}`;
+        
+        // Set website field in the form
+        const websiteEl = document.getElementById('website');
+        if (websiteEl) websiteEl.value = currentDomain;
+      } catch (urlError) {
+        console.error('Invalid URL:', urlError);
+        currentDomain = 'unknown';
+      }
     }
     
     // Initialize auth client
-    authClient = await AuthClient.create();
-    const isAuthenticated = await authClient.isAuthenticated();
-    
-    if (isAuthenticated) {
-      await handleAuthenticated();
-    } else {
+    try {
+      authClient = await AuthClient.create();
+      const isAuthenticated = authClient && await authClient.isAuthenticated();
+      
+      if (isAuthenticated) {
+        await handleAuthenticated();
+      } else {
+        showView('login');
+      }
+    } catch (authError) {
+      console.error('Auth client initialization error:', authError);
       showView('login');
     }
   } catch (error) {
     console.error('Initialization error:', error);
+    showView('login');
   }
 }
 
@@ -60,6 +78,8 @@ function showView(viewName) {
   currentView = viewName;
   
   Object.keys(views).forEach(key => {
+    if (!views[key]) return; // Skip if element not found
+    
     if (key === viewName) {
       views[key].classList.remove('hidden');
     } else {
@@ -71,6 +91,11 @@ function showView(viewName) {
 // Handle authenticated state
 async function handleAuthenticated() {
   try {
+    if (!authClient) {
+      console.error('Auth client not initialized');
+      return;
+    }
+    
     const identity = authClient.getIdentity();
     
     // Create agent and actor
@@ -79,31 +104,36 @@ async function handleAuthenticated() {
       host: HOST
     });
     
-    // When developing locally we need to disable certificate verification
-    if (process.env.NODE_ENV !== 'production' && process.env.DFX_NETWORK !== 'ic') {
-      agent.fetchRootKey().catch(err => {
-        console.warn('Unable to fetch root key. Check your local replica is running');
-        console.error(err);
-      });
-    }
-    
     actor = createActor(CANISTER_ID, { agent });
     
     // Show passwords view and load passwords for current site
     showView('passwords');
     await loadPasswordsForCurrentSite();
+    
+    // Inform background script that user is authenticated
+    chrome.runtime.sendMessage({
+      action: 'authStateChanged',
+      isAuthenticated: true
+    });
   } catch (error) {
     console.error('Authentication error:', error);
+    showView('login');
   }
 }
 
 // Login with Internet Identity
 async function login() {
   try {
+    if (!authClient) {
+      console.error('Auth client not initialized');
+      authClient = await AuthClient.create();
+      if (!authClient) {
+        throw new Error('Failed to create auth client');
+      }
+    }
+    
     await authClient.login({
-      identityProvider: process.env.DFX_NETWORK === 'ic'
-        ? 'https://identity.ic0.app/#authorize'
-        : `http://localhost:4943?canisterId=${process.env.CANISTER_ID_INTERNET_IDENTITY}`,
+      identityProvider: 'https://identity.ic0.app/#authorize',
       onSuccess: async () => {
         await handleAuthenticated();
       },
@@ -119,9 +149,20 @@ async function login() {
 // Logout
 async function logout() {
   try {
+    if (!authClient) {
+      console.error('Auth client not initialized');
+      return;
+    }
+    
     await authClient.logout();
     actor = null;
     showView('login');
+    
+    // Inform background script that user has logged out
+    chrome.runtime.sendMessage({
+      action: 'authStateChanged',
+      isAuthenticated: false
+    });
   } catch (error) {
     console.error('Logout error:', error);
   }
@@ -134,11 +175,13 @@ async function loadPasswordsForCurrentSite() {
   try {
     // Show loading state
     const credentialsList = document.getElementById('credentials-list');
+    if (!credentialsList) return;
+    
     const loadingEl = credentialsList.querySelector('.loading');
     const emptyStateEl = credentialsList.querySelector('.empty-state');
     
-    loadingEl.classList.remove('hidden');
-    emptyStateEl.classList.add('hidden');
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (emptyStateEl) emptyStateEl.classList.add('hidden');
     
     // Remove existing credential items
     document.querySelectorAll('.credential-item').forEach(el => el.remove());
@@ -149,7 +192,7 @@ async function loadPasswordsForCurrentSite() {
     if ('ok' in result) {
       // Filter for current domain
       currentSiteCredentials = result.ok.filter(
-        entry => entry.website.includes(currentDomain)
+        entry => entry.website && entry.website.includes(currentDomain)
       );
       
       // Display credentials or empty state
@@ -166,18 +209,20 @@ async function loadPasswordsForCurrentSite() {
             fillCredentialsOnPage(cred);
           });
           
-          credentialsList.insertBefore(credItem, loadingEl);
+          if (loadingEl && credentialsList) {
+            credentialsList.insertBefore(credItem, loadingEl);
+          }
         });
         
-        emptyStateEl.classList.add('hidden');
+        if (emptyStateEl) emptyStateEl.classList.add('hidden');
       } else {
-        emptyStateEl.classList.remove('hidden');
+        if (emptyStateEl) emptyStateEl.classList.remove('hidden');
       }
     } else {
       console.error('Failed to load passwords:', result.err);
     }
     
-    loadingEl.classList.add('hidden');
+    if (loadingEl) loadingEl.classList.add('hidden');
   } catch (error) {
     console.error('Error loading passwords:', error);
   }
@@ -187,19 +232,21 @@ async function loadPasswordsForCurrentSite() {
 async function fillCredentialsOnPage(credential) {
   try {
     await chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-      chrome.tabs.sendMessage(
-        tabs[0].id,
-        {
-          action: 'fillCredentials',
-          username: credential.username,
-          password: credential.password
-        },
-        response => {
-          if (response && response.success) {
-            window.close(); // Close the popup after filling
+      if (tabs && tabs[0] && tabs[0].id) {
+        chrome.tabs.sendMessage(
+          tabs[0].id,
+          {
+            action: 'fillCredentials',
+            username: credential.username,
+            password: credential.password
+          },
+          response => {
+            if (response && response.success) {
+              window.close(); // Close the popup after filling
+            }
           }
-        }
-      );
+        );
+      }
     });
   } catch (error) {
     console.error('Error filling credentials:', error);
@@ -213,13 +260,15 @@ async function savePassword(event) {
   if (!actor) return;
   
   const formEl = document.getElementById('password-form');
+  if (!formEl) return;
+  
   const formData = new FormData(formEl);
   
   const passwordEntry = {
     id: crypto.randomUUID(),
-    website: formData.get('website'),
-    username: formData.get('username'),
-    password: formData.get('password'),
+    website: formData.get('website') || currentDomain,
+    username: formData.get('username') || '',
+    password: formData.get('password') || '',
     notes: formData.get('notes') || '',
     lastUpdated: Date.now() * 1000000 // Convert to nanoseconds
   };
@@ -254,7 +303,10 @@ function generatePassword(length = 16) {
 async function searchPasswords() {
   if (!actor) return;
   
-  const searchTerm = document.getElementById('search-input').value.trim();
+  const searchInputEl = document.getElementById('search-input');
+  if (!searchInputEl) return;
+  
+  const searchTerm = searchInputEl.value.trim();
   
   if (!searchTerm) {
     await loadPasswordsForCurrentSite();
@@ -267,6 +319,8 @@ async function searchPasswords() {
     if ('ok' in result) {
       // Update UI with search results
       const credentialsList = document.getElementById('credentials-list');
+      if (!credentialsList) return;
+      
       const loadingEl = credentialsList.querySelector('.loading');
       const emptyStateEl = credentialsList.querySelector('.empty-state');
       
@@ -286,12 +340,14 @@ async function searchPasswords() {
             fillCredentialsOnPage(cred);
           });
           
-          credentialsList.insertBefore(credItem, loadingEl);
+          if (loadingEl && credentialsList) {
+            credentialsList.insertBefore(credItem, loadingEl);
+          }
         });
         
-        emptyStateEl.classList.add('hidden');
+        if (emptyStateEl) emptyStateEl.classList.add('hidden');
       } else {
-        emptyStateEl.classList.remove('hidden');
+        if (emptyStateEl) emptyStateEl.classList.remove('hidden');
       }
     } else {
       console.error('Search failed:', result.err);
@@ -307,52 +363,87 @@ document.addEventListener('DOMContentLoaded', () => {
   init();
   
   // Auth
-  document.getElementById('login-btn').addEventListener('click', login);
-  document.getElementById('logout-btn').addEventListener('click', logout);
+  const loginBtn = document.getElementById('login-btn');
+  if (loginBtn) loginBtn.addEventListener('click', login);
+  
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) logoutBtn.addEventListener('click', logout);
   
   // Navigation
-  document.getElementById('add-password-btn').addEventListener('click', () => {
-    document.getElementById('form-title').textContent = 'Add Password';
-    document.getElementById('password-form').reset();
-    document.getElementById('website').value = currentDomain;
-    showView('passwordForm');
-  });
+  const addPasswordBtn = document.getElementById('add-password-btn');
+  if (addPasswordBtn) {
+    addPasswordBtn.addEventListener('click', () => {
+      const formTitle = document.getElementById('form-title');
+      if (formTitle) formTitle.textContent = 'Add Password';
+      
+      const passwordForm = document.getElementById('password-form');
+      if (passwordForm) passwordForm.reset();
+      
+      const websiteField = document.getElementById('website');
+      if (websiteField) websiteField.value = currentDomain;
+      
+      showView('passwordForm');
+    });
+  }
   
-  document.getElementById('cancel-btn').addEventListener('click', () => {
-    showView('passwords');
-  });
+  const cancelBtn = document.getElementById('cancel-btn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      showView('passwords');
+    });
+  }
   
   // Form submission
-  document.getElementById('password-form').addEventListener('submit', savePassword);
+  const passwordForm = document.getElementById('password-form');
+  if (passwordForm) {
+    passwordForm.addEventListener('submit', savePassword);
+  }
   
   // Password generation
-  document.getElementById('generate-password').addEventListener('click', () => {
-    const passwordInput = document.getElementById('password');
-    passwordInput.value = generatePassword();
-    passwordInput.type = 'text';
-  });
+  const generatePasswordBtn = document.getElementById('generate-password');
+  if (generatePasswordBtn) {
+    generatePasswordBtn.addEventListener('click', () => {
+      const passwordInput = document.getElementById('password');
+      if (passwordInput) {
+        passwordInput.value = generatePassword();
+        passwordInput.type = 'text';
+      }
+    });
+  }
   
   // Toggle password visibility
-  document.getElementById('toggle-password').addEventListener('click', () => {
-    const passwordInput = document.getElementById('password');
-    passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
-  });
+  const togglePasswordBtn = document.getElementById('toggle-password');
+  if (togglePasswordBtn) {
+    togglePasswordBtn.addEventListener('click', () => {
+      const passwordInput = document.getElementById('password');
+      if (passwordInput) {
+        passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+      }
+    });
+  }
   
   // Search
-  document.getElementById('search-btn').addEventListener('click', searchPasswords);
-  document.getElementById('search-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      searchPasswords();
-    }
-  });
+  const searchBtn = document.getElementById('search-btn');
+  if (searchBtn) {
+    searchBtn.addEventListener('click', searchPasswords);
+  }
+  
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        searchPasswords();
+      }
+    });
+  }
   
   // View all button
-  document.getElementById('view-all-btn').addEventListener('click', async () => {
-    // Open main web app in a new tab
-    const url = process.env.DFX_NETWORK === 'ic'
-      ? `https://${process.env.CANISTER_ID_ICPPASS_FRONTEND}.ic0.app/`
-      : `http://localhost:4943/?canisterId=${process.env.CANISTER_ID_ICPPASS_FRONTEND}`;
-    
-    await chrome.tabs.create({ url });
-  });
+  const viewAllBtn = document.getElementById('view-all-btn');
+  if (viewAllBtn) {
+    viewAllBtn.addEventListener('click', async () => {
+      // Open main web app in a new tab with production canister ID
+      const url = `https://4ew3q-eqaaa-aaaad-aaw2a-cai.ic0.app/`;
+      await chrome.tabs.create({ url });
+    });
+  }
 }); 

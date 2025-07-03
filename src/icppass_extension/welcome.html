@@ -190,7 +190,7 @@
       </ol>
       
       <div class="buttons">
-        <button id="open-popup-btn" class="button">Open ICPPass</button>
+        <button id="login-btn" class="button">Login with Internet Identity</button>
         <a href="https://identity.ic0.app" target="_blank" class="button button-secondary">Create Internet Identity</a>
       </div>
     </div>
@@ -235,19 +235,6 @@
     </footer>
   </div>
   
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Handle opening the popup
-      document.getElementById('open-popup-btn').addEventListener('click', function() {
-        chrome.action.openPopup();
-      });
-      
-      // Handle opening the web app
-      document.getElementById('webapp-btn').addEventListener('click', function() {
-        const url = chrome.runtime.getURL('popup.html');
-        chrome.tabs.create({ url });
-      });
-    });
-  </script>
+  <script src="welcome.js"></script>
 </body>
 </html> 

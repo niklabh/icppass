@@ -45,6 +45,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
   }
   
+  // Handle popup open request (from welcome page)
+  if (message.action === 'openPopup') {
+    // Cannot directly open popup via API, so create a notification to guide user
+    if ('notifications' in chrome) {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: 'ICPPass',
+        message: 'Please click on the ICPPass icon in your browser toolbar to continue.',
+        priority: 2
+      });
+    }
+  }
+  
   // Handle mobile sync requests
   if (message.action === 'requestMobileSync') {
     // Generate a sync code or QR code
@@ -87,4 +101,15 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
       }
     });
   }
+});
+
+// Add browser action click listener
+chrome.action.onClicked.addListener((tab) => {
+  // Open the popup programmatically
+  chrome.windows.create({
+    url: chrome.runtime.getURL("popup.html"),
+    type: "popup",
+    width: 400,
+    height: 600
+  });
 }); 
