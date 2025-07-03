@@ -135,3 +135,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Contact
 
 For questions or feedback, please open an issue in the GitHub repository.
+
+## Production
+
+Deployed canisters.
+URLs:
+  Frontend canister via browser:
+    icppass_frontend: https://4ew3q-eqaaa-aaaad-aaw2a-cai.icp0.io/
+  Backend canister via Candid interface:
+    icppass_backend: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=4rrk5-fyaaa-aaaad-aawzq-cai
