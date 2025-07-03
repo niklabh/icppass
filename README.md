@@ -1,59 +1,137 @@
-# `icppass`
+# ICPPass - Secure Password Manager on Internet Computer
 
-Welcome to your new `icppass` project and to the Internet Computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
+ICPPass is a secure password manager built on the Internet Computer Protocol (ICP) by DFINITY. It utilizes the blockchain's security and decentralization to store your passwords safely while providing a seamless user experience through a web interface, browser extension, and mobile compatibility.
 
-To get started, you might want to explore the project directory structure and the default configuration file. Working with this project in your development environment will not affect any production deployment or identity tokens.
+## Features
 
-To learn more before you start working with `icppass`, see the following documentation available online:
+- **Secure Password Storage**: All passwords are encrypted and stored on the Internet Computer blockchain
+- **Internet Identity Authentication**: No username/password required, authenticate with Internet Identity
+- **Browser Extension**: Easily autofill passwords on websites
+- **Cross-Platform Support**: Works on desktop browsers and iOS devices
+- **Password Generator**: Create strong, unique passwords
+- **Search Functionality**: Quickly find stored credentials
 
-- [Quick Start](https://internetcomputer.org/docs/current/developer-docs/setup/deploy-locally)
-- [SDK Developer Tools](https://internetcomputer.org/docs/current/developer-docs/setup/install)
-- [Motoko Programming Language Guide](https://internetcomputer.org/docs/current/motoko/main/motoko)
-- [Motoko Language Quick Reference](https://internetcomputer.org/docs/current/motoko/main/language-manual)
+## Architecture
 
-If you want to start working on your project right away, you might want to try the following commands:
+ICPPass consists of several components:
 
-```bash
-cd icppass/
-dfx help
-dfx canister --help
+1. **Backend Canister (Motoko)**: Handles password storage, retrieval, and user authentication
+2. **Frontend Web App (React)**: Provides a user-friendly interface for managing passwords
+3. **Browser Extension**: Enables autofill functionality across websites
+4. **Mobile Support**: Makes passwords accessible on iOS devices
+
+## Getting Started
+
+### Prerequisites
+
+- [dfx](https://sdk.dfinity.org/docs/quickstart/local-quickstart.html) - The DFINITY Canister SDK
+- Node.js and npm
+- A modern web browser (Chrome, Firefox, Safari, or Edge)
+
+### Installation
+
+1. Clone the repository:
+```
+git clone https://github.com/yourusername/icppass.git
+cd icppass
 ```
 
-## Running the project locally
+2. Install dependencies:
+```
+npm install
+```
 
-If you want to test your project locally, you can use the following commands:
-
-```bash
-# Starts the replica, running in the background
+3. Start the local Internet Computer replica:
+```
 dfx start --background
+```
 
-# Deploys your canisters to the replica and generates your candid interface
+4. Deploy the canisters:
+```
 dfx deploy
 ```
 
-Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
+### Usage
 
-If you have made changes to your backend canister, you can generate a new candid interface with
+#### Web Application
 
-```bash
-npm run generate
+After deployment, you can access the web application at:
+- Local: `http://localhost:4943?canisterId=<frontend-canister-id>`
+- IC Mainnet: `https://<frontend-canister-id>.ic0.app/`
+
+#### Browser Extension
+
+To install the browser extension for development:
+
+1. Build the extension:
+```
+npm run build:extension
 ```
 
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
+2. Load the extension in Chrome:
+   - Navigate to `chrome://extensions/`
+   - Enable "Developer mode"
+   - Click "Load unpacked"
+   - Select the `dist/extension` directory
 
-If you are making frontend changes, you can start a development server with
+#### Mobile Access
 
-```bash
-npm start
+The web application is responsive and works on mobile browsers. For iOS devices:
+
+1. Navigate to the web application URL in Safari
+2. Use the "Add to Home Screen" option to create a web app icon
+
+## Development
+
+### Project Structure
+
+```
+icppass/
+├── dfx.json                   # DFINITY project configuration
+├── package.json               # Node.js dependencies
+├── src/
+│   ├── icppass_backend/       # Motoko canister code
+│   │   └── main.mo            # Backend logic
+│   ├── icppass_frontend/      # React frontend application
+│   │   ├── src/               # React components and logic
+│   │   └── public/            # Static assets
+│   └── icppass_extension/     # Browser extension code
+│       ├── manifest.json      # Extension manifest
+│       ├── popup.html         # Extension popup
+│       └── content.js         # Content script for autofill
 ```
 
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
+### Building for Production
 
-### Note on frontend environment variables
+To build the project for production:
 
-If you are hosting frontend code somewhere without using DFX, you may need to make one of the following adjustments to ensure your project does not fetch the root key in production:
+```
+dfx build
+dfx canister install --all --mode=reinstall
+```
 
-- set`DFX_NETWORK` to `ic` if you are using Webpack
-- use your own preferred method to replace `process.env.DFX_NETWORK` in the autogenerated declarations
-  - Setting `canisters -> {asset_canister_id} -> declarations -> env_override to a string` in `dfx.json` will replace `process.env.DFX_NETWORK` with the string in the autogenerated declarations
-- Write your own `createActor` constructor
+## Security
+
+ICPPass takes security seriously:
+
+- All passwords are encrypted before being stored on the blockchain
+- Authentication is handled by Internet Identity, a secure authentication system
+- No master password is stored anywhere
+- Communication is encrypted using TLS
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- DFINITY Foundation for creating the Internet Computer Protocol
+- Internet Identity for providing secure authentication
+
+## Contact
+
+For questions or feedback, please open an issue in the GitHub repository.

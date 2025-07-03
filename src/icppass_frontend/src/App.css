@@ -1,0 +1,283 @@
+:root {
+  --primary-color: #29abe2;
+  --secondary-color: #522785;
+  --accent-color: #ff5a5a;
+  --dark-bg: #222;
+  --light-bg: #f5f5f5;
+  --text-dark: #333;
+  --text-light: #fff;
+  --border-radius: 6px;
+  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  background-color: var(--light-bg);
+  color: var(--text-dark);
+  line-height: 1.6;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+input, textarea {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius);
+  width: 100%;
+  font-size: 16px;
+}
+
+/* App Container */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Login View */
+.login-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  padding: 20px;
+}
+
+.logo-container {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-light);
+}
+
+.logo-container img {
+  width: 100px;
+  height: auto;
+  margin-bottom: 1rem;
+}
+
+.login-box {
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.login-btn {
+  margin-top: 1.5rem;
+  padding: 12px 24px;
+  background-color: var(--primary-color);
+  color: white;
+  font-size: 16px;
+  width: 100%;
+}
+
+/* App Header */
+.app-header {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo-img {
+  width: 40px;
+  height: auto;
+  margin-right: 10px;
+}
+
+.logout-btn {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* App Main */
+.app-main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Password List */
+.password-list {
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 1.5rem;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.list-header h2 {
+  margin: 0;
+}
+
+.search-bar {
+  display: flex;
+  gap: 8px;
+  flex-grow: 1;
+  max-width: 400px;
+}
+
+.search-bar input {
+  flex-grow: 1;
+}
+
+.add-btn {
+  background-color: var(--secondary-color);
+}
+
+.password-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.password-table th, 
+.password-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.password-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions button:last-child {
+  background-color: var(--accent-color);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-state button {
+  margin-top: 1rem;
+  background-color: var(--secondary-color);
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 2rem;
+}
+
+.error {
+  color: var(--accent-color);
+}
+
+/* Password Form */
+.password-form {
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 1.5rem;
+}
+
+.password-form h2 {
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.password-input {
+  position: relative;
+}
+
+.generate-btn, .toggle-btn {
+  position: absolute;
+  right: 10px;
+  padding: 4px 8px;
+  font-size: 12px;
+  top: 37px;
+  background-color: var(--secondary-color);
+}
+
+.generate-btn {
+  right: 90px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 2rem;
+}
+
+.submit-btn {
+  background-color: var(--primary-color);
+}
+
+.cancel-btn {
+  background-color: #6c757d;
+}
+
+/* App Footer */
+.app-footer {
+  background-color: var(--dark-bg);
+  color: var(--text-light);
+  text-align: center;
+  padding: 1rem;
+  margin-top: auto;
+} 

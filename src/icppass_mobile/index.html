@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ICPPass">
+  <meta name="theme-color" content="#29abe2">
+  <title>ICPPass Mobile</title>
+  
+  <!-- iOS Icons -->
+  <link rel="apple-touch-icon" href="icons/ios/icon-120.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/ios/icon-152.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="icons/ios/icon-167.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/ios/icon-180.png">
+  
+  <!-- iOS Splash Screens -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="icons/ios/splash-1125x2436.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" href="icons/ios/splash-828x1792.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" href="icons/ios/splash-1242x2688.png">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="mobile-wrapper">
+    <div class="app-header">
+      <img src="icons/ios/icon-180.png" alt="ICPPass Logo" class="logo">
+      <h1>ICPPass</h1>
+    </div>
+    
+    <div class="app-container">
+      <iframe id="app-iframe" src="" frameborder="0" allow="clipboard-read; clipboard-write"></iframe>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Configure the iframe to point to the main app
+      const appUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:4943?canisterId=FRONTEND_CANISTER_ID'
+        : 'https://FRONTEND_CANISTER_ID.ic0.app/';
+      
+      document.getElementById('app-iframe').src = appUrl;
+      
+      // Handle native app behaviors
+      document.addEventListener('touchmove', function(e) {
+        // Allow scrolling within the iframe
+        if (e.target.closest('#app-iframe')) {
+          e.stopPropagation();
+        }
+      });
+      
+      // Disable pull-to-refresh
+      document.body.addEventListener('touchstart', function(e) {
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    });
+  </script>
+</body>
+</html> 
